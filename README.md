@@ -52,7 +52,9 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 \## Testing and verification
 
-\- From Kali: `ping -c 5 192.168.56.30` got replies.
+\- The target machine network settings: (screenshots/target-network-settings.png)
+
+\- From Kali: `ping -c 5 192.168.56.30` got replies. (screenshots/ping-kali-to-target.png)
 
 \- Isolation check: (add the result of `ping -c 3 8.8.8.8` from the target, it should fail)
 

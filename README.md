@@ -66,3 +66,43 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 \- \*\*No `inet addr` in `ifconfig`:\*\* the static config hadn't been applied. Re-applied it and the ping worked.
 
+### Metasploitable 2 setup
+
+- **Empty folder in VirtualBox file picker:** the ZIP hadn't been extracted yet. 
+  Fixed by extracting it fully before browsing to the .vmdk.
+
+- **No "ISO Image" needed:** Metasploitable ships as a ready-made disk (.vmdk), 
+  not an installer. Left ISO Image empty and attached the .vmdk directly as 
+  an existing hard disk.
+
+- **"Skip Unattended Installation" checkbox greyed out:** harmless in this 
+  VirtualBox version when no ISO is selected. Continued past it with no issue, 
+  since attaching an existing disk skips the install flow anyway.
+
+- **No inet addr after editing /etc/network/interfaces:** the static config 
+  hadn't been applied yet. Fixed with `sudo ifdown eth0 && sudo ifup eth0` 
+  (a reboot also works).
+
+- **Keyboard reset to QWERTY on every reboot:** `loadkeys fr` only lasts for 
+  the session. Fixed permanently by adding `loadkeys fr` to /etc/rc.local, 
+  above the `exit 0` line.
+
+- **Major incident: lost all configuration after a reboot.** Cause: a 
+  VirtualBox snapshot was restored instead of a normal reboot, most likely 
+  via "Restore current snapshot" being ticked in the shutdown dialog. 
+  All work since the clean-install snapshot was wiped. The VM was deleted 
+  and rebuilt from scratch.
+  
+  Lesson learned: never let "Restore current snapshot" be ticked when closing 
+  a VM unless you intend to discard changes. Use "Power off the machine" for 
+  a normal shutdown instead.
+
+- **sudo poweroff / halt showed scary errors ("unable to load IDE devices", 
+  "System halted"):** cosmetic warnings from Metasploitable's outdated drivers 
+  reacting to VirtualBox's virtual hardware. The shutdown still completes 
+  correctly; "System halted" is the normal final message, not an error.
+
+- **New habit adopted after the rebuild:** verify configuration survives a 
+  reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, 
+  and take a fresh snapshot after every milestone, not just once at the start.
+

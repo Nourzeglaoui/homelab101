@@ -224,7 +224,7 @@ the Metasploit reverse handler port used by the vsftpd backdoor session.
 This was the clearest and fastest indicator of compromise: an active,
 unexpected connection on a non-standard port.
 
-![Attacker connection visible via netstat](screenshots/attacker_machine_connection.png)
+![Attacker connection visible via netstat](screenshots/attack_machine_connection.png)
 
 **Logs:** standard authentication and system logs showed little to nothing
 useful, since the backdoor bypasses normal login entirely.

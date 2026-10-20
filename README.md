@@ -66,9 +66,6 @@ nmap -sn 192.168.56.0/24
 
 Then scanned the target for open ports and service versions:
 
-nmap -sV -Pn 192.168.56.30 -oN ~/scan-target.txt
-
-
 This identified 20+ open ports (FTP, SSH, Telnet, SMTP, DNS, HTTP, SMB, RPC, MySQL, PostgreSQL, VNC, IRC, Tomcat, and more), expected since Metasploitable is deliberately riddled with outdated, vulnerable services for practice.
 
 ## First exploit: vsftpd 2.3.4 backdoor

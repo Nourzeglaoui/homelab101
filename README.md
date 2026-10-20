@@ -42,19 +42,15 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 ## Troubleshooting log
 
-- **No "ISO Image" needed:** Metasploitable ships as a ready-made disk (`.vmdk`), not an installer. Left ISO Image empty and attached the `.vmdk` directly as an existing hard disk.
-
-- **"Skip Unattended Installation" checkbox greyed out:** harmless in this VirtualBox version when no ISO is selected. Continued past it with no issue, since attaching an existing disk skips the install flow anyway.
-
 - **No `inet addr` after editing `/etc/network/interfaces`:** the static config hadn't been applied yet. Fixed with `sudo ifdown eth0 && sudo ifup eth0` (a reboot also works).
 
 - **Keyboard reset to QWERTY on every reboot:** `loadkeys fr` only lasts for the session. Fixed permanently by adding `loadkeys fr` to `/etc/rc.local`, above the `exit 0` line.
 
 - **Major incident: lost all configuration after a reboot.** Cause: a VirtualBox snapshot was restored instead of a normal reboot, because "Restore current snapshot" being ticked in the shutdown dialog. All work since the clean-install snapshot was wiped. The VM was deleted and rebuilt from scratch (This step was a bit frustrating to me but I learned from it.)
 
-- **`sudo poweroff` / `halt` showed scary errors ("unable to load IDE devices", "System halted"):** cosmetic warnings from Metasploitable's outdated drivers reacting to VirtualBox's virtual hardware. The shutdown still completes correctly; "System halted" is the normal final message, not an error.
+- **`sudo poweroff` / `halt` showed some errors ("unable to load IDE devices", "System halted"):** warnings from Metasploitable's outdated drivers reacting to VirtualBox's virtual hardware. The shutdown still completes correctly; "System halted" is the normal final message, not an error.
 
-- **New habit adopted after the rebuild:** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone just in case.
+- **New habit I adopted after the rebuild is to: ** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone just in case.
 
 ## Reconnaissance
 
@@ -133,7 +129,7 @@ UnrealIRCd's official source was compromised in 2009; a backdoor was inserted so
 6. Forced the exploit past the check: `set ForceExploit true`, then `exploit`.
 
 ### Result
-Meterpreter session opened successfully despite the version-check warning, since the warning only reflects a failed banner match, not the actual outcome. Confirmed root access with `getuid`.
+Meterpreter session opened successfully despite the version-check warning, since the warning only reflects a failed banner match, not the actual outcome. Then I Confirmed root access with `getuid`.
 
 ### Lesson learned
 A module's own "not exploitable" message is a pre-check, not a verdict. When there's good reason to believe a target is vulnerable (Metasploitable 2 is documented to ship this backdoor), `ForceExploit` can bypass an unreliable version fingerprint.
@@ -142,15 +138,15 @@ A module's own "not exploitable" message is a pre-check, not a verdict. When the
 
 ## Blue Team Analysis: Detecting the Attacks
 
-After exploiting the target, reviewed it from a defender's perspective to understand what evidence each attack left behind.
+After exploiting the target, I reviewed it from a defender's perspective to understand what evidence each attack left behind.
 
 ### Method
-- Re-triggered the vsftpd backdoor exploit from Kali
-- On the target, checked active connections (`netstat -antp`), running processes (`ps aux`), and system logs (`/var/log/auth.log`, `/var/log/syslog`)
+- Re-triggered the vsftpd backdoor exploit from Kali to test that.
+- On the target, I checked active connections (`netstat -antp`), running processes (`ps aux`), and system logs (`/var/log/auth.log`, `/var/log/syslog`)
 
 ### Findings
 
-**Active connections:** `netstat -antp` showed a live connection from the attacker machine (Kali, 192.168.56.10) to the target on **port 4444** — the Metasploit reverse handler port used by the vsftpd backdoor session. This was the clearest and fastest indicator of compromise: an active, unexpected connection on a non-standard port.
+**Active connections:** `netstat -antp` showed a live connection from the Kali machine (192.168.56.10) to the target on **port 4444** — the Metasploit reverse handler port used by the vsftpd backdoor session. This was the clearest indicator of compromise: an active, unexpected connection on a non-standard port.
 
 ![Attacker connection visible via netstat](screenshots/attack_machine_connection.png)
 
@@ -159,18 +155,18 @@ After exploiting the target, reviewed it from a defender's perspective to unders
 ![Auth log review](screenshots/logs1.png)
 ![Syslog review](screenshots/logs2.png)
 
-## Network-Level Detection: Capturing the Attack with Wireshark
+## Network-Level Detection: Capturing the Attack with Wireshark (This is my first time using it on a project)
 
-Since Metasploitable 2's outdated OS doesn't support modern host-based monitoring tools (Wazuh, auditd), detection was approached at the network level instead — capturing and analyzing the exploit traffic directly.
+Since Metasploitable 2's outdated OS doesn't support modern host-based monitoring tools like Wazuh, detection was approached at the network level instead by capturing and analyzing the exploit traffic directly with Wireshark.
 
 ### Method
 - `sudo tcpdump -i eth1 host 192.168.56.30 -w attack-capture.pcap` on Kali, left running while re-triggering the vsftpd backdoor exploit
-- Opened the resulting capture in Wireshark
+- Opened the resulting capture.
 - Filtered to `ftp` to isolate the initial connection, then to `tcp.port == 4444` to find the follow-up reverse shell connection
 - Used **Follow → TCP Stream** on each to read the raw conversation
 
 ### Finding 1: The FTP trigger string
-The connection to port 21 contained the literal backdoor trigger (`:)` in the submitted username highlighted on the picture) in plain, readable text. This is a concrete network-level signature an IDS (e.g. Snort/Suricata) could alert on directly.
+The connection to port 21 contained the literal backdoor trigger (`:)` in the submitted username highlighted on the picture) in plain, readable text. This is a concrete network-level signature an Intrusion detection system could alert on directly.
 
 ![FTP stream showing the vsftpd backdoor trigger](screenshots/wireshark-vsftpd-trigger.png)
 
@@ -180,8 +176,10 @@ A second, separate connection appeared immediately after, on port 4444 — Metas
 ![Port 4444 reverse connection (Meterpreter traffic)](screenshots/wireshark-port4444-connection.png)
 
 ### Why this matters
-Two distinct, independently detectable signatures came out of a single exploit:
-1. A readable trigger string in FTP traffic — detectable by content inspection.
-2. An unexplained, sustained connection on port 4444 — detectable purely by behavior/metadata, even without decoding the payload.
+This exploit left two different clues behind. One was easy to spot: the actual text of the attack sitting right there in the FTP traffic. The other was sneakier: just a connection on port 4444 that had no normal reason to exist, even though I couldn't read what was being sent through it.
 
-This is an important lesson for detection : not every indicator of compromise is human-readable. Some attacks are caught by *what* a connection looks like (port, timing, persistence), not just *what's inside* it. Not every system can run modern endpoint monitoring either, especially legacy infrastructure, which is common in real environments — making network-level detection a necessary complement to host-based logging.
+That's the real lesson I learned here.
+
+Not every attack leaves something you can read. Sometimes the giveaway isn't *what's* in the traffic, it's that the traffic shouldn't be there at all: a weird port, a connection that lingers, timing that doesn't make sense. And a lot of real-world systems are old enough that they can't even run modern monitoring tools, so knowing how to read raw network traffic like this isn't just a lab exercise it's something that sometimes  comes in handy in real world scenarios even with all the new technology we have.
+
+THE END

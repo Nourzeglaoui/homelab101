@@ -173,7 +173,7 @@ Since Metasploitable 2's outdated OS doesn't support modern host-based monitorin
 - Used **Follow → TCP Stream** on each to read the raw conversation
 
 ### Finding 1: The FTP trigger string
-The connection to port 21 contained the literal backdoor trigger (`:)` in the submitted username which is highlighted on the picture in yellow.) in plain, readable text. This is a concrete network-level signature an IDS (e.g. Snort/Suricata) could alert on directly.
+The connection to port 21 contained the literal backdoor trigger (`:)` in the submitted username highlighted on the picture) in plain, readable text. This is a concrete network-level signature an IDS (e.g. Snort/Suricata) could alert on directly.
 
 ![FTP stream showing the vsftpd backdoor trigger](screenshots/wireshark-vsftpd-trigger.png)
 

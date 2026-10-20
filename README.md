@@ -50,7 +50,7 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 - **`sudo poweroff` / `halt` showed some errors ("unable to load IDE devices", "System halted"):** warnings from Metasploitable's outdated drivers reacting to VirtualBox's virtual hardware. The shutdown still completes correctly; "System halted" is the normal final message, not an error.
 
-- **New habit I adopted after the rebuild is to: ** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone just in case.
+- **New habit I adopted after the rebuild is to:** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone just in case.
 
 ## Reconnaissance
 

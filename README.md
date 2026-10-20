@@ -231,3 +231,49 @@ useful, since the backdoor bypasses normal login entirely.
 
 ![Auth log review](screenshots/logs1.png)
 ![Syslog review](screenshots/logs2.png)
+
+## Network-Level Detection: Capturing the Attack with Wireshark
+
+Since Metasploitable 2's outdated OS doesn't support modern host-based
+monitoring tools (Wazuh, auditd), detection was approached at the network
+level instead — capturing and analyzing the exploit traffic directly.
+
+### Method
+- `sudo tcpdump -i eth1 host 192.168.56.30 -w attack-capture.pcap` on Kali,
+  left running while re-triggering the vsftpd backdoor exploit
+- Opened the resulting capture in Wireshark
+- Filtered to `ftp` to isolate the initial connection, then to
+  `tcp.port == 4444` to find the follow-up reverse shell connection
+- Used **Follow → TCP Stream** on each to read the raw conversation
+
+### Finding 1: The FTP trigger string
+
+The connection to port 21 contained the literal backdoor trigger (`:)` in
+the submitted username) in plain, readable text. This is a concrete
+network-level signature an IDS (e.g. Snort/Suricata) could alert on
+directly.
+
+![FTP stream showing the vsftpd backdoor trigger](screenshots/wireshark-vsftpd-trigger.png)
+
+### Finding 2: The reverse shell connection
+
+A second, separate connection appeared immediately after, on port 4444 —
+Metasploit's default reverse handler port. Unlike the FTP stream, this
+traffic is Meterpreter's own protocol and is not human-readable.
+
+![Port 4444 reverse connection (Meterpreter traffic)](screenshots/wireshark-port4444-connection.png)
+
+### Why this matters
+Two distinct, independently detectable signatures came out of a single
+exploit:
+1. A readable trigger string in FTP traffic — detectable by content
+   inspection.
+2. An unexplained, sustained connection on port 4444 — detectable purely
+   by behavior/metadata, even without decoding the payload.
+
+This is an important lesson for detection engineering: not every indicator
+of compromise is human-readable. Some attacks are caught by *what* a
+connection looks like (port, timing, persistence), not just *what's inside*
+it. Not every system can run modern endpoint monitoring either, especially
+legacy infrastructure, which is common in real environments — making
+network-level detection a necessary complement to host-based logging.

@@ -25,9 +25,15 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 6. Set a static IP by editing `/etc/network/interfaces` (static, address 192.168.56.30, netmask 255.255.255.0).
 
 ## Testing and verification
-- Target machine network settings: `screenshots/target-network-settings.png`
-- From Kali: `ping -c 5 192.168.56.30` got replies. `screenshots/ping-kali-to-target.png`
-- Isolation check: `ping -c 3 8.8.8.8` from the target failed, confirming isolation from the internet.
+
+**Static IP confirmed on the target:**
+![Target network configuration](screenshots/target-network-settings.png)
+
+**Connectivity from Kali:**
+![Ping from Kali to the target](screenshots/ping-kali-to-target.png)
+
+**Isolation check** (target cannot reach the internet):
+![Isolation test — ping to 8.8.8.8 failing](screenshots/isolation-test.png)
 
 ## Troubleshooting log
 
@@ -49,6 +55,21 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 - **New habit adopted after the rebuild:** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone, not just once at the start.
 
+## Reconnaissance
+
+Before attacking anything, mapped the lab network from Kali to confirm which hosts were alive:
+nmap -sn 192.168.56.0/24
+
+
+![Host discovery scan](screenshots/Hosts-discovery.png)
+
+Then scanned the target for open ports and service versions:
+
+nmap -sV -Pn 192.168.56.30 -oN ~/scan-target.txt
+
+
+This identified 20+ open ports (FTP, SSH, Telnet, SMTP, DNS, HTTP, SMB, RPC, MySQL, PostgreSQL, VNC, IRC, Tomcat, and more), expected since Metasploitable is deliberately riddled with outdated, vulnerable services for practice.
+
 ## First exploit: vsftpd 2.3.4 backdoor
 
 **Target:** 192.168.56.30, port 21 (FTP), vsftpd 2.3.4
@@ -69,7 +90,6 @@ vsftpd 2.3.4's source was compromised in 2011; a backdoor was inserted so that s
 ### Result
 Meterpreter session opened. `getuid` confirmed root access (uid=0, gid=0).
 
-### Screenshot
 ![vsftpd backdoor exploit](screenshots/vsftpd-exploit.png)
 
 ## Second exploit: Samba usermap_script
@@ -95,7 +115,6 @@ A command shell session opened. Unlike Meterpreter, this shell shows no visible 
 ### Lesson learned
 A successful session with no visible prompt isn't a frozen terminal — it's normal for `exploit/multi/samba/usermap_script` and similar raw command-shell payloads. Typing a command (e.g. `whoami`) and pressing Enter confirms whether the shell is actually live.
 
-### Screenshot
 ![Samba usermap_script exploit](screenshots/samba-exploit.png)
 
 ## Third exploit: UnrealIRCd 3.2.8.1 backdoor
@@ -121,7 +140,6 @@ Meterpreter session opened successfully despite the version-check warning, since
 ### Lesson learned
 A module's own "not exploitable" message is a pre-check, not a verdict. When there's good reason to believe a target is vulnerable (Metasploitable 2 is documented to ship this backdoor), `ForceExploit` can bypass an unreliable version fingerprint. Always confirm actual success with `getuid`/`whoami` afterward rather than trusting status messages alone.
 
-### Screenshot
 ![UnrealIRCd backdoor exploit](screenshots/unrealircd-exploit.png)
 
 ## Blue Team Analysis: Detecting the Attacks
@@ -136,7 +154,7 @@ After exploiting the target, reviewed it from a defender's perspective to unders
 
 **Active connections:** `netstat -antp` showed a live connection from the attacker machine (Kali, 192.168.56.10) to the target on **port 4444** — the Metasploit reverse handler port used by the vsftpd backdoor session. This was the clearest and fastest indicator of compromise: an active, unexpected connection on a non-standard port.
 
-![Attacker connection visible via netstat](screenshots/attacker_machine_connection.png)
+![Attacker connection visible via netstat](screenshots/attack_machine_connection.png)
 
 **Logs:** standard authentication and system logs showed little to nothing useful, since the backdoor bypasses normal login entirely.
 

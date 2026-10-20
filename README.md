@@ -55,7 +55,6 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 ## Reconnaissance
 
 Before attacking anything, I mapped the homelabnetwork with nmap from the Kali machine to confirm which hosts were alive:
-nmap -sn 192.168.56.0/24
 
 
 ![Host discovery scan](screenshots/Hosts-discovery.png)

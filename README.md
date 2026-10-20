@@ -1,6 +1,6 @@
 # homelab101
 
-## Goal
+## Pilot 1x1
 Hey, I'm Nour, a first year cybersecurity student, and this is my first project in this field with no prior experience. 
 I'm building a simple home lab from scratch: an isolated virtual network where Kali Linux and a vulnerable target VM talk to each other but not to the internet or my home network.
 I'm using it to practice networking, Linux, and scanning/attacking intentionally vulnerable machines in a safe environment. 

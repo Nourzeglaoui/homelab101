@@ -2,10 +2,10 @@
 
 ## Pilot 1x1
 Hey, I'm Nour, a first year cybersecurity student, and this is my first project in this field with no prior experience. 
-I'm building a simple home lab from scratch: an isolated virtual network where Kali Linux and a vulnerable target VM talk to each other but not to the internet or my home network.
+I'm building a simple home lab from scratch: an isolated virtual network where Kali Linux(attack machine) and a vulnerable target VM talk to each other.
 I'm using it to practice networking, Linux, and scanning/attacking intentionally vulnerable machines in a safe environment. 
 I'm documenting every step, including the mistakes and fixes I've made along the way.
-My goal is to grow into a cloud security engineer in the near future and this project marks the beginning of my journey :)
+My goal is to grow into a cloud security engineer in the near future and this project marks the beginning of my journey.
 
 ## Architecture I used
 
@@ -42,15 +42,8 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 
 ## Troubleshooting log
 
-- **No `inet addr` after editing `/etc/network/interfaces`:** the static config hadn't been applied yet. Fixed with `sudo ifdown eth0 && sudo ifup eth0` (a reboot also works).
-
-- **Keyboard reset to QWERTY on every reboot:** `loadkeys fr` only lasts for the session. Fixed permanently by adding `loadkeys fr` to `/etc/rc.local`, above the `exit 0` line.
-
-- **Major incident: lost all configuration after a reboot.** Cause: a VirtualBox snapshot was restored instead of a normal reboot, because "Restore current snapshot" being ticked in the shutdown dialog. All work since the clean-install snapshot was wiped. The VM was deleted and rebuilt from scratch (This step was a bit frustrating to me but I learned from it.)
-
-- **`sudo poweroff` / `halt` showed some errors ("unable to load IDE devices", "System halted"):** warnings from Metasploitable's outdated drivers reacting to VirtualBox's virtual hardware. The shutdown still completes correctly; "System halted" is the normal final message, not an error.
-
-- **New habit I adopted after the rebuild is to:** verify configuration survives a reboot (static IP + keyboard layout) *before* taking a "clean" snapshot, and take a fresh snapshot after every milestone just in case.
+- **Major incident: lost all configuration after a reboot.** Cause: a VirtualBox snapshot was restored instead of a normal reboot, because "Restore current snapshot" being ticked in the shutdown dialog. All work since the clean-install snapshot was wiped. The VM was deleted so I had to rebuild it from scratch.
+- **New habit I adopted after the rebuild is to:** verify configuration survives a reboot and take a fresh snapshot after every milestone just in case.
 
 ## Reconnaissance
 
@@ -70,7 +63,7 @@ This identified 20+ open ports (FTP, SSH, Telnet, SMTP, DNS, HTTP, SMB, RPC, MyS
 **Module:** exploit/unix/ftp/vsftpd_234_backdoor
 
 ### What the vulnerability is
-vsftpd 2.3.4's source was compromised in 2011; a backdoor was inserted so that sending a username containing ":)" opens a root shell on port 6200 or 4444, no authentication required (Metasploitable2 ships this exact version intentionally for training which is really good for a beginner)
+vsftpd 2.3.4's source was compromised in 2011; a backdoor was inserted so that sending a username containing ":)" opens a root shell on port 6200 or 4444 and no authentication is required.
 
 ### Steps
 1. Identified vsftpd 2.3.4 via `nmap -sV` on port 21.
@@ -105,8 +98,6 @@ Older versions of Samba's (2007 versions 3.0.0 to 3.0.25rc3) "username map scrip
 ### Result
 A command shell session opened. Unlike Meterpreter, this shell shows no visible prompt. Confirmed it was live by typing `whoami` blind, which returned `root`.
 
-### Lesson learned
-A successful session with no visible prompt is normal for `exploit/multi/samba/usermap_script` and similar raw command-shell payloads. Typing a command (e.g. `whoami`) and pressing Enter confirms whether the shell is actually live.
 
 ![Samba usermap_script exploit](screenshots/samba-exploit.png)
 
@@ -117,7 +108,7 @@ A successful session with no visible prompt is normal for `exploit/multi/samba/u
 **Module:** exploit/unix/irc/unreal_ircd_3281_backdoor
 
 ### What the vulnerability is
-UnrealIRCd's official source was compromised in 2009; a backdoor was inserted so that any input containing "AB;" followed by a command gets executed directly on the system shell, no authentication required (which I thought was crazy).
+UnrealIRCd's official source was compromised in 2009; a backdoor was inserted so that any input containing "AB;" followed by a command gets executed directly on the system shell, no authentication required.
 
 ### Steps
 1. Identified UnrealIRCd on port 6667 via nmap.
@@ -128,10 +119,8 @@ UnrealIRCd's official source was compromised in 2009; a backdoor was inserted so
 6. Forced the exploit past the check: `set ForceExploit true`, then `exploit`.
 
 ### Result
-Meterpreter session opened successfully despite the version-check warning, since the warning only reflects a failed banner match, not the actual outcome. Then I Confirmed root access with `getuid`.
+Meterpreter session opened successfully then I confirmed root access with `getuid`.
 
-### Lesson learned
-A module's own "not exploitable" message is a pre-check, not a verdict. When there's good reason to believe a target is vulnerable (Metasploitable 2 is documented to ship this backdoor), `ForceExploit` can bypass an unreliable version fingerprint.
 
 ![UnrealIRCd backdoor exploit](screenshots/unrealircd-exploit.png)
 
@@ -145,7 +134,8 @@ After exploiting the target, I reviewed it from a defender's perspective to unde
 
 ### Findings
 
-**Active connections:** `netstat -antp` showed a live connection from the Kali machine (192.168.56.10) to the target on **port 4444** — the Metasploit reverse handler port used by the vsftpd backdoor session. This was the clearest indicator of compromise: an active, unexpected connection on a non-standard port.
+**Active connections:** `netstat -antp` showed a live connection from the Kali machine (192.168.56.10) to the target on **port 4444** — the Metasploit reverse handler port used by the vsftpd backdoor session. 
+This was the clearest indicator of compromise: an active unexpected connection on a non-standard port.
 
 ![Attacker connection visible via netstat](screenshots/attack_machine_connection.png)
 
@@ -165,20 +155,21 @@ Since Metasploitable 2's outdated OS doesn't support modern host-based monitorin
 - Used **Follow → TCP Stream** on each to read the raw conversation
 
 ### Finding 1: The FTP trigger string
-The connection to port 21 contained the literal backdoor trigger (`:)` in the submitted username highlighted on the picture) in plain, readable text. This is a concrete network-level signature an Intrusion detection system could alert on directly.
+The connection to port 21 contained the literal backdoor trigger (`:)`) in the submitted username in plain, readable text (Highlighted in the screenshot below). 
+This is a concrete network-level signature an Intrusion detection system could alert on directly.
 
 ![FTP stream showing the vsftpd backdoor trigger](screenshots/wireshark-vsftpd-trigger.png)
 
 ### Finding 2: The reverse shell connection
-A second, separate connection appeared immediately after, on port 4444 — Metasploit's default reverse handler port. Unlike the FTP stream, this traffic is Meterpreter's own protocol and is not human-readable.
+A second, separate connection appeared immediately after, on port 4444 — Metasploit's default reverse handler port. Unlike the FTP stream, this traffic is is not human-readable.
 
 ![Port 4444 reverse connection (Meterpreter traffic)](screenshots/wireshark-port4444-connection.png)
 
 ### Why this matters
-This exploit left two different clues behind. One was easy to spot: the actual text of the attack sitting right there in the FTP traffic. The other was sneakier: just a connection on port 4444 that had no normal reason to exist, even though I couldn't read what was being sent through it.
+This exploit left two different clues behind. One was easy to spot: the actual text of the attack sitting right there in the FTP traffic. The other was sneakier: just a connection on port 4444 that had no normal reason to exist.
 
-That's the real lesson I learned here.
-
-Not every attack leaves something you can read. Sometimes the giveaway isn't *what's* in the traffic, it's that the traffic shouldn't be there at all: a weird port, a connection that lingers, timing that doesn't make sense. And a lot of real-world systems are old enough that they can't even run modern monitoring tools, so knowing how to read raw network traffic like this isn't just a lab exercise it's something that sometimes  comes in handy in real world scenarios even with all the new technology we have.
+### What I've learned from doing this project : 
+Not every attack leaves something you can read. Sometimes the giveaway isn't *what's* in the traffic, it's that the traffic shouldn't be there at all: a weird port, a connection that lingers, timing that doesn't make sense.
+A lot of real-world systems are old enough that they can't even run modern monitoring tools, so knowing how to read raw network traffic like this isn't just a lab exercise it's something comes in handy in real world scenarios.
 
 THE END

@@ -3,8 +3,8 @@
 ## Pilot 1x1
 Hey, I'm Nour, a first year cybersecurity student, and this is my first project in this field with no prior experience. 
 I'm building a simple home lab from scratch: an isolated virtual network where Kali Linux(attack machine) and a vulnerable target VM talk to each other.
-I'm using it to practice networking, Linux, and scanning/attacking intentionally vulnerable machines in a safe environment. 
-I'm documenting every step, including the mistakes and fixes I've made along the way.
+Im using this home lab to practice networking, Linux, and scanning/attacking intentionally vulnerable machines in a safe environment. 
+I'm documenting every step including some mistakes and fixes I've made along the way.
 My goal is to grow into a cloud security engineer in the near future and this project marks the beginning of my journey.
 
 ## Architecture I used
@@ -23,8 +23,7 @@ Network: VirtualBox Internal Network named `homelabnetwork`, subnet 192.168.56.0
 2. Created a VM (Linux, 32-bit, 512 MB RAM) with no ISO, attaching the existing `Metasploitable.vmdk` as its disk.
 3. Set Adapter 1 to Internal Network `homelabnetwork` before first boot, so it was never exposed to my real network.
 4. Logged in with the default `msfadmin` / `msfadmin` credentials.
-5. Switched the console to AZERTY with `sudo loadkeys fr` (because am using an AZERTY keyboard)
-6. Set a static IP by editing `/etc/network/interfaces` (static, address 192.168.56.30, netmask 255.255.255.0).
+5. Set a static IP by editing `/etc/network/interfaces` (static, address 192.168.56.30, netmask 255.255.255.0).
 
 ## Testing and verification
 
